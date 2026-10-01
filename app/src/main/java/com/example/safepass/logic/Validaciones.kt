@@ -4,17 +4,22 @@ import android.util.Log
 import com.example.safepass.data.Asistente
 import com.example.safepass.ui.RegistroState
 
+// ---------- Reglas del evento (un solo lugar para cambiarlas) ----------
+
+const val EDAD_MINIMA = 18   // mayoría de edad: solo ingresan adultos
+const val EDAD_MAXIMA = 95   // tope realista contra errores de tipeo
+
 // ---------- Extension Functions ----------
 
 /** Regla de seguridad del evento: solo mayores de edad. */
-fun Int.esMayorDeEdad(): Boolean = this >= 18
+fun Int.esMayorDeEdad(): Boolean = this >= EDAD_MINIMA
 
-/** Edad realista para un asistente: evita errores de tipeo como 0 o 250. */
-fun Int.esEdadRealista(): Boolean = this in 1..100
+/** Edad humana razonable: filtra errores de tipeo como 0, -5 o 250. */
+fun Int.esEdadRealista(): Boolean = this in 1..EDAD_MAXIMA
 
-/** Un nombre es válido si tiene al menos 2 caracteres y solo letras o espacios. */
+/** Un nombre es válido si tiene al menos 3 caracteres y solo letras o espacios. */
 fun String.esNombreValido(): Boolean =
-    this.trim().length >= 2 && this.trim().all { it.isLetter() || it == ' ' }
+    this.trim().length >= 3 && this.trim().all { it.isLetter() || it == ' ' }
 
 /** Precio base según el tipo de entrada. */
 fun String.precioBase(): Double = when (this) {
@@ -39,7 +44,7 @@ fun procesarRegistro(
 
     // 1. Validación del nombre (extension function)
     if (!nombre.esNombreValido()) {
-        return RegistroState.Error("Nombre inválido: use solo letras (mínimo 2 caracteres).")
+        return RegistroState.Error("Nombre inválido: use solo letras (mínimo 3 caracteres).")
     }
 
     // 2. Entrada segura: toIntOrNull() evita el crash si escriben letras o dejan vacío.
@@ -47,7 +52,7 @@ fun procesarRegistro(
     //    Elvis (?:) sale con Error si el valor es nulo o no es una edad realista.
     val edad: Int = edadTexto.trim().toIntOrNull()
         ?.let { if (it.esEdadRealista()) it else null }
-        ?: return RegistroState.Error("Ingrese una edad válida (número entero entre 1 y 100).")
+        ?: return RegistroState.Error("Edad inválida: ingrese un número entero entre $EDAD_MINIMA y $EDAD_MAXIMA.")
 
     // 3. Regla de negocio: mayoría de edad (extension function sobre Int)
     if (!edad.esMayorDeEdad()) {
